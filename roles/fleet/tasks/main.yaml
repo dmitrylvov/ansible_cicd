@@ -1,0 +1,28 @@
+# roles/fleet/tasks/main.yaml
+---
+# Add the Helm repository for Fleet
+- name: Add Helm repository for Fleet
+  kubernetes.core.helm_repository:
+    name: rancher-stable
+    repo_url: "{{ fleet_repo }}"
+    state: present
+  when: inventory_hostname == groups['servers'][0]
+
+# Update Helm repositories
+- name: Update Helm repositories
+  kubernetes.core.helm:
+    update_repo_cache: true
+  when: inventory_hostname == groups['servers'][0]
+
+# Install Fleet using Helm
+- name: Install Fleet via Helm
+  kubernetes.core.helm:
+    name: fleet-system
+    chart_ref: "{{ fleet_chart_name }}"
+    chart_repo_url: "{{ fleet_repo }}"
+    chart_version: "{{ fleet_chart_version }}"
+    namespace: "{{ fleet_namespace }}"
+    release_state: present
+    create_namespace: true
+    values: {}
+  when: inventory_hostname == groups['servers'][0]
