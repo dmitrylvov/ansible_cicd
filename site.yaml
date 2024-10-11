@@ -42,8 +42,8 @@
     - add-agent
 
 # Fleet
-#- name: Deploy fleet
-#  hosts: servers
-#  gather_facts: true
-#  roles:
-#    - fleet
+- name: Deploy fleet
+  hosts: servers
+  gather_facts: true
+  roles:
+    - fleet

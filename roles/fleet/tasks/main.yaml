@@ -1,28 +1,29 @@
-# roles/fleet/tasks/main.yaml
 ---
-# Add the Helm repository for Fleet
-- name: Add Helm repository for Fleet
-  kubernetes.core.helm_repository:
-    name: rancher-stable
-    repo_url: "{{ fleet_repo }}"
-    state: present
+- name: Download and install Helm
+  script:
+    cmd: "{{ role_path }}/files/helm-install.sh"
+    creates: /usr/local/bin/helm
   when: inventory_hostname == groups['servers'][0]
 
-# Update Helm repositories
-- name: Update Helm repositories
-  kubernetes.core.helm:
-    update_repo_cache: true
+- name: Add Fleet Helm repo
+  command: helm repo add fleet https://rancher.github.io/fleet-helm-charts/
+  register: helm_repo_add
+  changed_when: "'fleet' not in helm_repo_add.stdout"
   when: inventory_hostname == groups['servers'][0]
 
-# Install Fleet using Helm
-- name: Install Fleet via Helm
-  kubernetes.core.helm:
-    name: fleet-system
-    chart_ref: "{{ fleet_chart_name }}"
-    chart_repo_url: "{{ fleet_repo }}"
-    chart_version: "{{ fleet_chart_version }}"
-    namespace: "{{ fleet_namespace }}"
-    release_state: present
-    create_namespace: true
-    values: {}
+- name: Update Helm repos
+  command: helm repo update
+  when: helm_repo_add.changed
+
+- name: Install Fleet CRDs
+  command: >
+    helm -n cattle-fleet-system install --create-namespace --wait fleet-crd fleet/fleet-crd
+  register: fleet_crd_install
+  changed_when: "'fleet-crd' not in fleet_crd_install.stdout"
+  when: inventory_hostname == groups['servers'][0]
+
+- name: Install Fleet
+  command: >
+    helm -n cattle-fleet-system install --create-namespace --wait fleet fleet/fleet
+  when: fleet_crd_install.changed
   when: inventory_hostname == groups['servers'][0]

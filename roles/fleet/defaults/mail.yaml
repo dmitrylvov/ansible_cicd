@@ -1,0 +1,2 @@
+helm_version: latest
+fleet_namespace: cattle-fleet-system
